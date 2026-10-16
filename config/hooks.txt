@@ -13,3 +13,4 @@
 0x0059A849  Frontend HUD center after original X write
 0x005A44D0  Frontend HUD center after original X write
 0x006C9C5C  Mouse X in the same virtual HUD coordinates
+0x005696C0  FEngHud::SetWideScreenMode entry: minimap vertical offset

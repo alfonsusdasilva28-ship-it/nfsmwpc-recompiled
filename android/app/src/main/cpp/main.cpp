@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.h>
 #include <algorithm>
 #include <vector>
+#include <mutex>
+#include <atomic>
 #include <stdexcept>
 #include <string>
 #include <cstring>
@@ -236,6 +238,16 @@ struct Host {
     GuestBootWorker guestWorker;
 };
 static GamepadInput gamepad;
+// Device ids the Java side accepted as real gamepads (updateGamepads). Events
+// from anything else never reach the pad: several MediaTek phones expose
+// sensors and side keys as joysticks whose X axis rests off centre.
+static std::mutex gamepadDevicesMutex;
+static std::vector<int32_t> gamepadDevices;
+static std::atomic<bool> gamepadsRemoved{false};
+static bool acceptedGamepad(const AInputEvent* event){
+    std::lock_guard<std::mutex> lock(gamepadDevicesMutex);
+    return std::find(gamepadDevices.begin(),gamepadDevices.end(),AInputEvent_getDeviceId(event))!=gamepadDevices.end();
+}
 static void setPadKey(unsigned scan,bool down){setGuestKey(scan,down);}
 static void publishPad(){
     auto state=gamepad.padState();
@@ -255,9 +267,12 @@ static void onCommand(android_app* app, int32_t command) {
 static int32_t onInput(android_app*,AInputEvent* event){
     int32_t type=AInputEvent_getType(event);
     gamepad.setKeyEmulation(!guestGamepadInUse());
-    if(type==AINPUT_EVENT_TYPE_MOTION){bool handled=gamepad.motion(event,guestDrivingControls(),setPadKey);if(handled)publishPad();return handled?1:0;}
+    if(type==AINPUT_EVENT_TYPE_MOTION){
+        if(!acceptedGamepad(event))return 0;
+        bool handled=gamepad.motion(event,guestDrivingControls(),setPadKey);if(handled)publishPad();return handled?1:0;
+    }
     if(type!=AINPUT_EVENT_TYPE_KEY)return 0;
-    if(GamepadInput::isGamepad(event)&&gamepad.key(event,guestDrivingControls(),setPadKey)){publishPad();return 1;}
+    if(GamepadInput::isGamepad(event)&&acceptedGamepad(event)&&gamepad.key(event,guestDrivingControls(),setPadKey)){publishPad();return 1;}
     int32_t key=AKeyEvent_getKeyCode(event);unsigned scan=0;
     switch(key){
     case AKEYCODE_DPAD_UP:scan=0xc8;break;case AKEYCODE_DPAD_DOWN:scan=0xd0;break;
@@ -302,6 +317,14 @@ extern "C" JNIEXPORT void JNICALL Java_com_nfsmw_androidevolved_GameActivity_nat
 extern "C" JNIEXPORT void JNICALL Java_com_nfsmw_androidevolved_GameActivity_nativeResolution(JNIEnv*,jclass,jint width,jint height){setGuestResolution(unsigned(width),unsigned(height));}
 extern "C" JNIEXPORT void JNICALL Java_com_nfsmw_androidevolved_GameActivity_nativeFrameLimit(JNIEnv*,jclass,jint cap){setGuestFrameLimit(unsigned(cap));}
 extern "C" JNIEXPORT void JNICALL Java_com_nfsmw_androidevolved_GameActivity_nativeGamepadConnected(JNIEnv*,jclass,jboolean connected){setGuestPadConnected(connected==JNI_TRUE);}
+extern "C" JNIEXPORT void JNICALL Java_com_nfsmw_androidevolved_GameActivity_nativeGamepadDevices(JNIEnv* env,jclass,jintArray ids){
+    std::vector<int32_t> devices;
+    if(ids){jsize count=env->GetArrayLength(ids);devices.resize(size_t(count));if(count)env->GetIntArrayRegion(ids,0,count,devices.data());}
+    std::lock_guard<std::mutex> lock(gamepadDevicesMutex);
+    if(devices!=gamepadDevices)__android_log_print(ANDROID_LOG_INFO,"NFSMW","Accepted gamepads: %zu device(s)",devices.size());
+    if(devices.size()<gamepadDevices.size())gamepadsRemoved=true;
+    gamepadDevices=std::move(devices);
+}
 extern "C" JNIEXPORT void JNICALL Java_com_nfsmw_androidevolved_GameActivity_nativeWidescreen(JNIEnv*,jclass,jboolean enabled){setGuestWidescreen(enabled==JNI_TRUE);}
 extern "C" JNIEXPORT void JNICALL Java_com_nfsmw_androidevolved_GameActivity_nativeNetworkIdentity(JNIEnv*,jclass,jlong identity){setGuestNetworkIdentity(uint64_t(identity));}
 // Minimap at the top-left: the bottom-left corner sits under the steering thumb.
@@ -361,6 +384,7 @@ void android_main(android_app* app) {
         const bool active = host.resumed && app->window && !host.failed;
         int id = ALooper_pollOnce(active ? (d3d9RequestsSurface()?16:0) : -1, nullptr, &events, reinterpret_cast<void**>(&source));
         if (id >= 0 && source) source->process(app, source);
+        if(gamepadsRemoved.exchange(false)){gamepad.releaseAll(setPadKey);publishPad();}
         gamepad.setKeyEmulation(!guestGamepadInUse());gamepad.refresh(guestDrivingControls(),setPadKey);
         if (app->destroyRequested) break;
         if (!host.resumed || !app->window || host.failed) continue;

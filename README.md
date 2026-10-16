@@ -32,9 +32,38 @@ This is **not** an emulator and **not** a port of the Xbox 360 version: every fu
 | MW-M3 Windows host build and link | ✅ |
 | MW-M4/M5 CRT, memory, original entry point | ✅ |
 | MW-M6/M7 Win32, Direct3D 9, first frame | ✅ D3DX effects loaded from the game's own resources |
-| MW-M8/M9 Intro, menus, world | 🔧 3D world with traffic renders (≈1,450 draws/frame), 75 s+ without crashes; menus and input in progress |
-| MW-M10+ Racing, police, saving | User-confirmed playable racing; two-phone LAN and Online gameplay validated, further stability testing ongoing |
-| Android ARM64 / ARMv7 APKs | Builds and runs: cinematics, menu input and user-confirmed gameplay; race quality/control validation ongoing |
+| MW-M8/M9 Intro, menus, world | ✅ Cinematics, front end, career map and free roam; touch cursor, keyboard and gamepad |
+| MW-M10+ Racing, police, saving | ✅ User-confirmed fully playable; LAN and Online (EA Nation replacement server) played on two phones |
+| Android ARM64 | ✅ Playable (S25 Ultra, Redmi Note 8 and tester phones); reports are tracked in [issues](https://github.com/codepdbh/nfsmwpc-recompiled/issues) |
+| Android ARMv7 | Builds; not yet tested on a device |
+
+### Playing on Android
+
+1. Install the APK for your architecture (arm64 recommended).
+2. Copy your PC installation into `Internal storage/nfsmw` so that `nfsmw/Speed.exe` exists
+   next to `GLOBAL`, `TRACKS`, `CARS`, `FRONTEND`, `LANGUAGES`, `SOUND`, `MOVIES` and `NIS`.
+   Add `d3dx9_26.dll` (DirectX runtime, from your Windows `SysWOW64`) and, for LAN hosting,
+   `server.dll` and `server.cfg` from the game.
+3. Open the launcher, pick your language with the flags (Español, English, Português),
+   grant file access and press **PLAY**.
+
+The launcher sets the internal resolution, FPS limit, proportional widescreen HUD, minimap position
+(top-left by default, so the steering thumb does not cover it), CPU/GPU latency, compressed texture
+mode, Vulkan driver (system or a custom Turnip ZIP) and the Online server. In game, the on-screen
+controls can be moved, resized and switched to classic, Xbox or PlayStation layouts, or replaced by
+tilt steering or a Bluetooth/USB gamepad.
+
+### Next version (in this branch)
+
+- Minimap moved to the top-left corner in races (launcher option).
+- Car steering left by itself on some MediaTek phones: input from built-in sensors exposed as
+  joysticks is ignored, and touch buttons whose release event was lost are let go.
+- DXVK crash in `D3D9Surface::ClearContainer` after a failed device Reset (issues #2, #3, #13).
+- Fewer hitches: the Vulkan pipeline cache is kept between sessions, DXT textures decoded on the
+  CPU only decode the locked region, dynamic vertex/index buffers no longer read back GPU memory
+  on every lock, and per-frame log lines were removed.
+- Launcher in Spanish, English or Portuguese; clearer messages when the game files are missing or
+  were copied one folder too deep; Danish, Finnish and Polish game languages.
 
 Android runtime fixes and current verification limits: [bring-up notes](docs/ANDROID_BRINGUP.md).
 
@@ -45,7 +74,7 @@ config/    reference executable, forced seeds, hooks, overrides (Most Wanted onl
 scripts/   binary analysis, seed discovery, lift driver, Windows build/test
 src/       Windows host, runtime adapters, Most Wanted shims
 docs/      binary report and reuse audit of Underground 1/2
-android/   Android app (in progress)
+android/   Android app (launcher, touch controls, D3D9→Vulkan bridge, guest runtime)
 work/      (local only) analysis copy, catalog, logs
 ```
 
@@ -90,7 +119,7 @@ Code in this repository: see each file. pcrecomp by sp00nznet. Proportional HUD 
 
 Recompilación estática de la **versión de PC** de *Need for Speed: Most Wanted* (2005, `speed.exe`, x86) a código nativo: primero un host de validación en Windows y después **Android ARM64 y ARMv7**. Es el tercer juego de la familia *NFS Android Evolved*, después de [Underground 2](https://github.com/codepdbh/nfsu2-recompiled) y [Underground 1](https://github.com/codepdbh/nfsu1-recompiled).
 
-**No** es un emulador ni un port de la versión de Xbox 360: cada función del ejecutable original de PC se traduce de antemano de x86 a C con [pcrecomp](https://github.com/sp00nznet/pcrecomp) (modificado) y después se compila con MSVC (Windows) o con el NDK de Android (ARM64).
+**No** es un emulador ni un port de la versión de Xbox 360: cada función del ejecutable original de PC se traduce de antemano de x86 a C con [pcrecomp](https://github.com/sp00nznet/pcrecomp) (modificado) y después se compila con MSVC (Windows) o con el NDK de Android (ARM64 / ARMv7).
 
 > No se incluyen archivos del juego. Necesitas tu propia copia del juego de PC. El código C generado, las copias de análisis y los registros se producen localmente y nunca se suben.
 
@@ -104,9 +133,38 @@ Recompilación estática de la **versión de PC** de *Need for Speed: Most Wante
 | MW-M3 Compilación y enlace del host de Windows | ✅ |
 | MW-M4/M5 CRT, memoria, punto de entrada original | ✅ |
 | MW-M6/M7 Win32, Direct3D 9, primer frame | ✅ efectos D3DX cargados desde los recursos del propio juego |
-| MW-M8/M9 Intro, menús, mundo | 🔧 el mundo 3D con tráfico se dibuja (≈1.450 draws por frame), más de 75 s sin cierres; menús y controles en curso |
-| MW-M10+ Carreras, policía, guardado | ⏳ |
-| APK de Android ARM64 / ARMv7 | Gameplay, imagen proporcional, acelerador y Esc confirmados en S25; estabilidad en pruebas |
+| MW-M8/M9 Intro, menús, mundo | ✅ cinemáticas, menús, mapa de carrera y modo libre; cursor táctil, teclado y mando |
+| MW-M10+ Carreras, policía, guardado | ✅ totalmente jugable según las pruebas del autor; LAN y Online (servidor sustituto de EA Nation) jugados en dos teléfonos |
+| Android ARM64 | ✅ jugable (S25 Ultra, Redmi Note 8 y teléfonos de testers); los reportes se siguen en las [issues](https://github.com/codepdbh/nfsmwpc-recompiled/issues) |
+| Android ARMv7 | Compila; aún sin probar en un dispositivo |
+
+### Cómo jugar en Android
+
+1. Instala el APK de tu arquitectura (se recomienda arm64).
+2. Copia tu instalación de PC en `Memoria interna/nfsmw`, de forma que exista `nfsmw/Speed.exe`
+   junto a `GLOBAL`, `TRACKS`, `CARS`, `FRONTEND`, `LANGUAGES`, `SOUND`, `MOVIES` y `NIS`.
+   Añade `d3dx9_26.dll` (runtime de DirectX, de la carpeta `SysWOW64` de tu Windows) y, para
+   crear partidas LAN, `server.dll` y `server.cfg` del juego.
+3. Abre el launcher, elige tu idioma con las banderas (Español, English, Português), da acceso
+   a los archivos y pulsa **JUGAR**.
+
+El launcher permite elegir resolución interna, límite de FPS, HUD panorámico proporcional, posición
+del minimapa (arriba a la izquierda por defecto, para que el pulgar del volante no lo tape), latencia
+CPU/GPU, modo de texturas comprimidas, driver Vulkan (del sistema o un ZIP de Turnip) y servidor
+Online. En el juego, los controles táctiles se pueden mover, redimensionar y cambiar a los estilos
+clásico, Xbox o PlayStation, o sustituir por inclinación o por un mando Bluetooth/USB.
+
+### Próxima versión (en esta rama)
+
+- Minimapa en la esquina superior izquierda durante las carreras (opción del launcher).
+- El auto giraba solo a la izquierda en algunos MediaTek: se ignoran los sensores del teléfono que
+  se presentan como joystick y se sueltan los botones táctiles cuyo evento de soltar se perdió.
+- Cierre de DXVK en `D3D9Surface::ClearContainer` tras un Reset fallido (issues #2, #3, #13).
+- Menos tirones: la caché de pipelines de Vulkan se conserva entre sesiones, las texturas DXT que
+  se convierten en la CPU solo decodifican la zona bloqueada, los buffers dinámicos ya no releen la
+  memoria de la GPU en cada bloqueo y se quitaron registros que se escribían en cada frame.
+- Launcher en español, inglés o portugués; mensajes más claros cuando faltan los archivos o se
+  copiaron una carpeta de más; idiomas del juego danés, finés y polaco.
 
 ### Compilación (Windows)
 
@@ -114,4 +172,4 @@ Requisitos: Visual Studio con MSVC x86, Python 3 con `capstone` y `pefile`, `pcr
 
 ### Licencia y créditos
 
-Código de este repositorio: ver cada archivo. pcrecomp por sp00nznet. *Need for Speed* es una marca de Electronic Arts; este proyecto no está afiliado a EA.
+Código de este repositorio: ver cada archivo. pcrecomp por sp00nznet. La adaptación del HUD proporcional sigue el WidescreenFix de ThirteenAG ([aviso](THIRD_PARTY_NOTICES.md)). *Need for Speed* es una marca de Electronic Arts; este proyecto no está afiliado a EA.

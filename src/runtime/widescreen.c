@@ -21,7 +21,38 @@ void nfs_widescreen_init(const char *game_root) { (void)game_root; }
 void nfs_widescreen_set_display_aspect(float aspect) { display_aspect=aspect>1.f&&aspect<8.f?aspect:0.f; }
 void nfs_widescreen_set_resolution(unsigned width, unsigned height) { render_width=width;render_height=height; }
 int nfs_widescreen_hud_entries(void) { return 0; }
-void nfs_widescreen_set_minimap_offset(float dy) { (void)dy; }
+/* Minimap vertical move (Android: the bottom-left corner sits under the
+ * steering thumb). Minimap::AdjustForWidescreen (0x5678A0) moves the map
+ * horizontally through its local X (+0xB8) and five FE children (+0x3C, +0x40,
+ * +0x44, +0x48, +0x90; object data +0x2C, X at +0x1C); the same objects carry Y
+ * at +0xBC and data +0x20, and the radar icons add the pivot pair at 0x91CF04
+ * (X) / 0x91CF08 (Y, otherwise unused and 0). */
+static float minimap_offset;
+static uint32_t minimap_object;
+static float minimap_applied,minimap_written_y;
+static float get_float(uint32_t address){float value;uint32_t bits=MEM32(address);memcpy(&value,&bits,sizeof(value));return value;}
+static void move_minimap(uint32_t minimap,float dy){
+    static const uint32_t children[]={0x3cu,0x40u,0x44u,0x48u,0x90u};
+    for(unsigned i=0;i<sizeof(children)/sizeof(children[0]);++i){
+        uint32_t child=MEM32(minimap+children[i]),data=child?MEM32(child+0x2cu):0;
+        if(data&&children[i]!=0x90u)put_float(data+0x20u,get_float(data+0x20u)+dy);
+    }
+    put_float(minimap+0xbcu,get_float(minimap+0xbcu)+dy);
+    { uint32_t child=MEM32(minimap+0x90u),data=child?MEM32(child+0x2cu):0;
+      if(data)MEM32(data+0x20u)=MEM32(minimap+0xbcu); }
+}
+/* Once per HUD update (FEngHud::SetWideScreenMode entry, ecx = FEngHud). A new
+ * Minimap, or one at a reused address whose Y no longer holds what we wrote,
+ * starts from the original layout. */
+static void update_minimap(uint32_t hud){
+    uint32_t minimap=hud?MEM32(hud+0x320u):0;
+    if(!minimap){minimap_object=0;return;}
+    if(minimap!=minimap_object||get_float(minimap+0xbcu)!=minimap_written_y){minimap_object=minimap;minimap_applied=0.f;}
+    if(minimap_applied!=minimap_offset){move_minimap(minimap,minimap_offset-minimap_applied);minimap_applied=minimap_offset;}
+    minimap_written_y=get_float(minimap+0xbcu);
+    put_float(0x0091CF08u,minimap_applied);
+}
+void nfs_widescreen_set_minimap_offset(float dy) { minimap_offset=dy; }
 void nfs_widescreen_set_frame_rate(unsigned fps) { (void)fps; }
 void nfs_widescreen_apply_frame_rate(void) {}
 void nfs_frontend_cursor_units(int on) { (void)on; }
@@ -36,6 +67,7 @@ void recomp_hook(uint32_t va) {
         }
         update_hud();
         return;
+    case 0x005696C0u:update_minimap(g_ecx);return;
     /* After each original mov [esp+offset],320, before its following Y write. */
     case 0x0056FED8u:put_float(g_esp+0x19c,hud_center);return;
     case 0x00584EFAu:put_float(g_esp+0x90,hud_center);return;

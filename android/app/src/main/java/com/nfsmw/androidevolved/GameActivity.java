@@ -69,24 +69,24 @@ public final class GameActivity extends NativeActivity {
         }
     }
     private void showTiltOptions() {
-        if(tiltSensor==null) {Toast.makeText(this,"Este dispositivo no dispone de acelerómetro",Toast.LENGTH_LONG).show();return;}
+        if(tiltSensor==null) {Toast.makeText(this,tr("Este dispositivo no dispone de acelerómetro"),Toast.LENGTH_LONG).show();return;}
         android.content.SharedPreferences options=getSharedPreferences("touch_layouts_v1",MODE_PRIVATE);
         LinearLayout form=new LinearLayout(this);form.setOrientation(LinearLayout.VERTICAL);form.setPadding(dp(24),dp(8),dp(24),dp(8));
-        CheckBox enabled=new CheckBox(this);enabled.setText("Girar inclinando el celular");enabled.setChecked(tiltEnabled);form.addView(enabled);
-        CheckBox invert=new CheckBox(this);invert.setText("Invertir dirección");invert.setChecked(tiltInvert);form.addView(invert);
-        TextView label=new TextView(this);label.setText("Sensibilidad: "+tiltSensitivity+"×");form.addView(label);
+        CheckBox enabled=new CheckBox(this);enabled.setText(tr("Girar inclinando el celular"));enabled.setChecked(tiltEnabled);form.addView(enabled);
+        CheckBox invert=new CheckBox(this);invert.setText(tr("Invertir dirección"));invert.setChecked(tiltInvert);form.addView(invert);
+        TextView label=new TextView(this);label.setText(tr("Sensibilidad: %s×",tiltSensitivity));form.addView(label);
         android.widget.SeekBar sensitivity=new android.widget.SeekBar(this);sensitivity.setMax(30);sensitivity.setProgress(Math.round(tiltSensitivity*10)-10);form.addView(sensitivity);
         sensitivity.setOnSeekBarChangeListener(new android.widget.SeekBar.OnSeekBarChangeListener() {
             public void onStartTrackingTouch(android.widget.SeekBar bar) {}public void onStopTrackingTouch(android.widget.SeekBar bar) {}
-            public void onProgressChanged(android.widget.SeekBar bar,int progress,boolean user) {label.setText("Sensibilidad: "+((progress+10)/10f)+"×");}
+            public void onProgressChanged(android.widget.SeekBar bar,int progress,boolean user) {label.setText(tr("Sensibilidad: %s×",(progress+10)/10f));}
         });
-        TextView help=new TextView(this);help.setText("Sostén el celular en tu posición de juego al aplicar. La inclinación activa izquierda/derecha; los pedales siguen siendo táctiles.");form.addView(help);
-        new AlertDialog.Builder(this).setTitle("Conducción por inclinación").setView(form)
-                .setPositiveButton("Aplicar y calibrar",(dialog,which)->{
+        TextView help=new TextView(this);help.setText(tr("Sostén el celular en tu posición de juego al aplicar. La inclinación activa izquierda/derecha; los pedales siguen siendo táctiles."));form.addView(help);
+        new AlertDialog.Builder(this).setTitle(tr("Conducción por inclinación")).setView(form)
+                .setPositiveButton(tr("Aplicar y calibrar"),(dialog,which)->{
                     tiltEnabled=enabled.isChecked();tiltInvert=invert.isChecked();tiltSensitivity=(sensitivity.getProgress()+10)/10f;
                     options.edit().putBoolean("tilt.enabled",tiltEnabled).putBoolean("tilt.invert",tiltInvert).putFloat("tilt.sensitivity",tiltSensitivity).apply();
                     updateTiltSensor();
-                }).setNegativeButton("Cancelar",null).show();
+                }).setNegativeButton(tr("Cancelar"),null).show();
     }
     private android.hardware.input.InputManager inputManager;
     private final android.hardware.input.InputManager.InputDeviceListener gamepadListener=new android.hardware.input.InputManager.InputDeviceListener() {
@@ -97,6 +97,7 @@ public final class GameActivity extends NativeActivity {
     /** Physical gamepads drive the game natively; the touch layer hides while one is connected. */
     private void updateGamepads() {
         boolean connected=false;
+        java.util.ArrayList<Integer> accepted=new java.util.ArrayList<>();
         for(int id:android.view.InputDevice.getDeviceIds()) {
             android.view.InputDevice device=android.view.InputDevice.getDevice(id);
             if(device==null||device.isVirtual())continue;
@@ -106,8 +107,12 @@ public final class GameActivity extends NativeActivity {
             boolean stick=(sources&android.view.InputDevice.SOURCE_JOYSTICK)==android.view.InputDevice.SOURCE_JOYSTICK&&
                     device.getMotionRange(android.view.MotionEvent.AXIS_X)!=null&&
                     device.getMotionRange(android.view.MotionEvent.AXIS_Y)!=null;
-            if(buttons||stick)connected=true;
+            if(buttons||stick){connected=true;accepted.add(id);}
         }
+        // Only these devices may move the guest's stick: phones whose built-in
+        // sensors also report joystick events otherwise steer by themselves.
+        int[] ids=new int[accepted.size()];for(int i=0;i<ids.length;++i)ids[i]=accepted.get(i);
+        nativeGamepadDevices(ids);
         if(touchControls!=null)touchControls.setGamepadConnected(connected);
         nativeGamepadConnected(connected);
     }
@@ -127,6 +132,7 @@ public final class GameActivity extends NativeActivity {
     private static native void nativeOnlineServer(String host);
     private static native void nativeNetworkIdentity(long identity);
     private static native void nativeGamepadConnected(boolean connected);
+    private static native void nativeGamepadDevices(int[] ids);
     private static native void nativeMinimapTop(boolean top);
     private static native void nativeBackBuffers(int count);
     private static native void nativeCpuTextures(boolean enabled);
@@ -135,35 +141,36 @@ public final class GameActivity extends NativeActivity {
         GameOptions.Option option=GameOptions.find(GameOptions.FPS);
         String saved=GameOptions.get(this,GameOptions.FPS);int selected=0;
         for(int i=0;i<option.values.length;i++)if(option.values[i].equals(saved))selected=i;
-        new AlertDialog.Builder(this).setTitle(option.title)
-                .setSingleChoiceItems(option.labels,selected,(dialog,which)->{
+        new AlertDialog.Builder(this).setTitle(tr(option.title))
+                .setSingleChoiceItems(Lang.t(this,option.labels),selected,(dialog,which)->{
                     GameOptions.set(this,GameOptions.FPS,option.values[which]);
                     nativeFrameLimit(Integer.parseInt(option.values[which]));dialog.dismiss();
-                }).setNegativeButton("Cancelar",null).show();
+                }).setNegativeButton(tr("Cancelar"),null).show();
     }
+    private String tr(String spanish,Object... args) {return Lang.t(this,spanish,args);}
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     private void showTextInput() {
         EditText name = new EditText(this);
         name.setSingleLine(true);
-        name.setHint("Nombre, correo o contraseña");
+        name.setHint(tr("Nombre, correo o contraseña"));
         name.setFilters(new InputFilter[]{new InputFilter.LengthFilter(40)});
         name.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD |
                 InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         name.setImeOptions(EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         CheckBox replace = new CheckBox(this);
-        replace.setText("Reemplazar el nombre actual");replace.setChecked(true);
+        replace.setText(tr("Reemplazar el nombre actual"));replace.setChecked(true);
         LinearLayout form = new LinearLayout(this);form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(dp(20), 0, dp(20), 0);form.addView(name);form.addView(replace);
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Escribir en el juego")
+                .setTitle(tr("Escribir en el juego"))
                 .setView(form)
-                .setNegativeButton("Cancelar", null)
-                .setPositiveButton("Escribir", null)
+                .setNegativeButton(tr("Cancelar"),null)
+                .setPositiveButton(tr("Escribir"), null)
                 .create();
         dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(button -> {
             String value = name.getText().toString();
             if (value.isEmpty() || !value.matches("[A-Za-z0-9 .,=/;_+?:!@#$%&*()-]{1,40}")) {
-                name.setError("Hasta 40 caracteres: letras sin tildes, números y . , - _ @ + ! # $ % & * ( ) = ? / ; :");
+                name.setError(tr("Hasta 40 caracteres: letras sin tildes, números y . , - _ @ + ! # $ % & * ( ) = ? / ; :"));
                 return;
             }
             nativeTypeText(value, replace.isChecked());
@@ -306,7 +313,7 @@ public final class GameActivity extends NativeActivity {
                     && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
         if (!allowed && !requested) {
             requested = true;
-            Toast.makeText(this, "Permite acceso a archivos para leer la carpeta nfsmw de la memoria interna", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, tr("Permite acceso a archivos para leer la carpeta nfsmw de la memoria interna"), Toast.LENGTH_LONG).show();
             if (Build.VERSION.SDK_INT >= 30) {
                 startActivity(new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
                         Uri.parse("package:" + getPackageName())));

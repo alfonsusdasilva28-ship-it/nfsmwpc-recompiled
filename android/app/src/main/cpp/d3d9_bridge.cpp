@@ -30,7 +30,8 @@ namespace {
 constexpr uint32_t methodBase=0x7e000000;
 enum class Kind:uint32_t {D3D9=1,Device=2,Texture=3,Cube=4,Surface=5,VertexBuffer=6,IndexBuffer=7,
     VertexShader=8,PixelShader=9,Declaration=10,StateBlock=11,Query=12,SwapChain=13,VolumeTexture=14,Volume=15};
-struct Object {IUnknown* native;Kind kind;uint32_t references=1;CompressedView compressed;uint32_t parent=0;uint32_t children=0;};
+// mirror: guest copy of a dynamic write-only buffer (d3d9_locks.inc lockBuffer).
+struct Object {IUnknown* native;Kind kind;uint32_t references=1;CompressedView compressed;uint32_t parent=0;uint32_t children=0;uint32_t mirror=0;};
 std::unordered_map<uint32_t,Object> objects;
 // Ordinary Device methods dominate a frame. Retain its validated handle so
 // setters/draws do not repeat the registry hash lookup. Never cache QI/refcounts.
@@ -76,6 +77,7 @@ void retireGuestObject(uint32_t address){
     if(address==hotDeviceAddress){hotDeviceAddress=0;hotDeviceNative=nullptr;}
     auto found=objects.find(address);if(found==objects.end())return;
     uint32_t table;std::memcpy(&table,pointer(address),4);
+    if(found->second.mirror)freeGuest(found->second.mirror);
     freeGuest(table);freeGuest(address);addresses.erase(found->second.native);objects.erase(found);
 }
 void attachTextureSurface(uint32_t texture,uint32_t surface){
@@ -146,11 +148,11 @@ void configureD3D9Bridge(void* base,uint32_t (*allocator)(uint32_t),void (*deall
 }
 void shutdownD3D9Bridge(){
     hotDeviceAddress=0;hotDeviceNative=nullptr;
-    for(auto& lock:resourceLocks)freeGuest(lock.second.guest);resourceLocks.clear();
+    for(auto& lock:resourceLocks)if(!lock.second.mirrored)freeGuest(lock.second.guest);resourceLocks.clear();
     for(uint32_t kind=15;kind;--kind)for(auto it=objects.begin();it!=objects.end();){
         if(static_cast<uint32_t>(it->second.kind)!=kind){++it;continue;}
         auto object=it->second;for(uint32_t n=0;n<object.references;++n)object.native->Release();
-        uint32_t table;std::memcpy(&table,pointer(it->first),4);freeGuest(table);freeGuest(it->first);addresses.erase(object.native);it=objects.erase(it);
+        uint32_t table;std::memcpy(&table,pointer(it->first),4);if(object.mirror)freeGuest(object.mirror);freeGuest(table);freeGuest(it->first);addresses.erase(object.native);it=objects.erase(it);
     }
     surfaceRequested=false;surfaceAvailable=false;
 #ifndef __ANDROID__
@@ -238,7 +240,9 @@ uint32_t dispatchGuestD3D9(uint32_t token,const uint32_t* args,uint32_t* argumen
             throw std::runtime_error("D3D9 COM Release without owned reference");
         }
         auto nativeReferences=object->Release();uint32_t references=--found->second.references;
-        if(kind==5)NFS_RUNTIME_LOG(ANDROID_LOG_INFO,"NFSMW","Surface Release object=%08x guestRefs=%u nativeRefs=%u",args[0],references,uint32_t(nativeReferences));
+        // Only the last guest reference: surfaces are fetched and released
+        // every frame, and a log line per call showed up as frame-time spikes.
+        if(kind==5&&!references)NFS_RUNTIME_LOG(ANDROID_LOG_INFO,"NFSMW","Surface Release object=%08x nativeRefs=%u",args[0],uint32_t(nativeReferences));
         if(!references){
             if(found->second.children)return uint32_t(nativeReferences);
             auto parent=found->second.parent;retireGuestObject(args[0]);
@@ -311,7 +315,8 @@ uint32_t dispatchGuestD3D9(uint32_t token,const uint32_t* args,uint32_t* argumen
             auto original=static_cast<D3DFORMAT>(args[5]),format=nativeTextureFormat(device,original,args[4],D3DRTYPE_TEXTURE);IDirect3DTexture9* texture=nullptr;
             HRESULT status=device->CreateTexture(args[1],args[2],args[3],args[4],format,static_cast<D3DPOOL>(args[6]),&texture,nullptr);
             uint32_t address=SUCCEEDED(status)?wrap(texture,Kind::Texture):0;
-            if(address&&format!=original){objects.at(address).compressed.texture=std::make_shared<CompressedTexture>(original,args[1],args[2],texture->GetLevelCount(),1);NFS_RUNTIME_LOG(ANDROID_LOG_INFO,"NFSMW","CPU DXT fallback texture %ux%u format=%u",args[1],args[2],original);}
+            if(address&&format!=original){objects.at(address).compressed.texture=std::make_shared<CompressedTexture>(original,args[1],args[2],texture->GetLevelCount(),1);static unsigned fallbacks=0;
+                if(++fallbacks<=8||!(fallbacks&255))NFS_RUNTIME_LOG(ANDROID_LOG_INFO,"NFSMW","CPU DXT fallback texture %ux%u format=%u (%u so far)",args[1],args[2],original,fallbacks);}
             write(args[7],address);return status;}
         case 25:{*argumentCount=8;if(args[7])throw std::runtime_error("Shared cube handle pending");if(!args[6])return D3DERR_INVALIDCALL;
             auto original=static_cast<D3DFORMAT>(args[4]),format=nativeTextureFormat(device,original,args[3],D3DRTYPE_CUBETEXTURE);IDirect3DCubeTexture9* texture=nullptr;

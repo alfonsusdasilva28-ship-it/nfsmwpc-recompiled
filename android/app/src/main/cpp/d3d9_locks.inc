@@ -1,4 +1,4 @@
-struct ResourceLock {void* native;uint32_t guest,size,pitch,rowBytes,rows,flags;CompressedView compressed{};RECT rectangle{};uint32_t nativePitch{};};
+struct ResourceLock {void* native;uint32_t guest,size,pitch,rowBytes,rows,flags;CompressedView compressed{};RECT rectangle{};uint32_t nativePitch{};bool mirrored=false;};
 std::map<uint64_t,ResourceLock> resourceLocks;
 uint64_t lockKey(uint32_t object,uint32_t subresource){return (uint64_t(object)<<32)|subresource;}
 uint32_t rowBytes(D3DFORMAT format,uint32_t width){
@@ -54,12 +54,11 @@ void copyLockBack(uint32_t address,uint32_t subresource){
         uint32_t offset=(data.rectangle.top/4)*data.pitch+(data.rectangle.left/4)*texture.blockBytes();
         for(uint32_t row=0;row<data.rows;++row)std::memcpy(raw.data()+offset+row*data.pitch,static_cast<const uint8_t*>(pointer(data.guest))+row*data.pitch,data.rowBytes);
         uint32_t width=texture.mipWidth(data.compressed.level),height=texture.mipHeight(data.compressed.level);
-        auto pixels=decodeDXT(texture.mode(),width,height,raw.data(),raw.size());
-        for(int32_t row=0;row<data.rectangle.bottom-data.rectangle.top;++row)
-            std::memcpy(static_cast<uint8_t*>(data.native)+row*data.nativePitch,pixels.data()+((size_t(data.rectangle.top)+row)*width+data.rectangle.left)*4,(data.rectangle.right-data.rectangle.left)*4);
+        decodeDXTRect(texture.mode(),width,height,raw.data(),raw.size(),uint32_t(data.rectangle.left),uint32_t(data.rectangle.top),
+                      uint32_t(data.rectangle.right),uint32_t(data.rectangle.bottom),static_cast<uint8_t*>(data.native),data.nativePitch);
     }
 }
-void releaseLock(uint32_t address,uint32_t subresource){auto lock=resourceLocks.find(lockKey(address,subresource));if(lock!=resourceLocks.end()){freeGuest(lock->second.guest);resourceLocks.erase(lock);}}
+void releaseLock(uint32_t address,uint32_t subresource){auto lock=resourceLocks.find(lockKey(address,subresource));if(lock!=resourceLocks.end()){if(!lock->second.mirrored)freeGuest(lock->second.guest);resourceLocks.erase(lock);}}
 HRESULT lockTexture(uint32_t address,uint32_t level,uint32_t output,const RECT* rect,uint32_t flags){
     if(!output||resourceLocks.count(lockKey(address,level)))return D3DERR_INVALIDCALL;
     auto texture=nativeObject<IDirect3DTexture9>(address);D3DSURFACE_DESC desc{};HRESULT status=texture->GetLevelDesc(level,&desc);if(FAILED(status))return status;
@@ -80,8 +79,24 @@ HRESULT lockSurface(uint32_t address,uint32_t output,const RECT* rect,uint32_t f
 template<class Buffer,class Desc>HRESULT lockBuffer(uint32_t address,uint32_t offset,uint32_t size,uint32_t output,uint32_t flags){
     if(!output||resourceLocks.count(lockKey(address,0)))return D3DERR_INVALIDCALL;
     auto buffer=nativeObject<Buffer>(address);Desc desc{};HRESULT status=buffer->GetDesc(&desc);if(FAILED(status))return status;
+    if(offset>desc.Size||(size&&size>desc.Size-offset))return D3DERR_INVALIDCALL;
+    // Dynamic write-only buffers (particles, HUD, skids: locked many times a
+    // frame) keep one guest copy for their lifetime. Every write reaches the
+    // native buffer through these locks, so the copy already holds what the
+    // native one does: no allocation and, above all, no read back from the
+    // mapped GPU memory (uncached on Android) before the game writes.
+    constexpr DWORD streaming=D3DUSAGE_DYNAMIC|D3DUSAGE_WRITEONLY;
+    auto& entry=objects.at(address);
+    if((desc.Usage&streaming)==streaming&&!entry.mirror){
+        entry.mirror=allocateGuest(desc.Size);std::memset(pointer(entry.mirror),0,desc.Size);
+    }
     void* native=nullptr;status=buffer->Lock(offset,size,&native,flags);if(FAILED(status))return status;
-    if(!size)size=desc.Size-offset;uint32_t temporary=allocateGuest(size);
+    if(!size)size=desc.Size-offset;
+    if(entry.mirror){
+        resourceLocks.emplace(lockKey(address,0),ResourceLock{native,entry.mirror+offset,size,size,size,1,flags,{},{},0,true});
+        write(output,entry.mirror+offset);return D3D_OK;
+    }
+    uint32_t temporary=allocateGuest(size);
     if(!(flags&D3DLOCK_DISCARD))std::memcpy(pointer(temporary),native,size);
     resourceLocks.emplace(lockKey(address,0),ResourceLock{native,temporary,size,size,size,1,flags});write(output,temporary);return D3D_OK;
 }
