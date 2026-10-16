@@ -3,12 +3,12 @@
 
 ### Android downloads / Descargas Android
 
-[Most Wanted v0.1.4](https://github.com/codepdbh/nfsmwpc-recompiled/releases/tag/v0.1.4)
+[Most Wanted v0.1.5](https://github.com/codepdbh/nfsmwpc-recompiled/releases/tag/v0.1.5)
 
 | APK | Architecture |
 |---|---|
-| [ARM64 / 64 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.4/NFSMWPC-AndroidEvolved-v0.1.4-arm64.apk) | arm64-v8a, recommended |
-| [ARMv7 / 32 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.4/NFSMWPC-AndroidEvolved-v0.1.4-armeabi-v7a.apk) | armeabi-v7a; requires Android with 32-bit app support |
+| [ARM64 / 64 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.5/NFSMWPC-AndroidEvolved-v0.1.5-arm64.apk) | arm64-v8a, recommended |
+| [ARMv7 / 32 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.5/NFSMWPC-AndroidEvolved-v0.1.5-armeabi-v7a.apk) | armeabi-v7a; requires Android with 32-bit app support |
 
 Android 10+ and Vulkan 1.1+. Both APKs use the same package and signing key;
 install the architecture supported by your device. Original game data is required.
@@ -53,7 +53,7 @@ mode, Vulkan driver (system or a custom Turnip ZIP) and the Online server. In ga
 controls can be moved, resized and switched to classic, Xbox or PlayStation layouts, or replaced by
 tilt steering or a Bluetooth/USB gamepad.
 
-### Next version (in this branch)
+### What's new in v0.1.5
 
 - Minimap moved to the top-left corner in races (launcher option).
 - Bluetooth/USB gamepads: only external devices count as pads (also those in keyboard mode), and
@@ -156,7 +156,7 @@ CPU/GPU, modo de texturas comprimidas, driver Vulkan (del sistema o un ZIP de Tu
 Online. En el juego, los controles táctiles se pueden mover, redimensionar y cambiar a los estilos
 clásico, Xbox o PlayStation, o sustituir por inclinación o por un mando Bluetooth/USB.
 
-### Próxima versión (en esta rama)
+### Novedades de v0.1.5
 
 - Minimapa en la esquina superior izquierda durante las carreras (opción del launcher).
 - Mandos Bluetooth/USB: solo cuentan los dispositivos externos (también los que están en modo
