@@ -272,7 +272,9 @@ static int32_t onInput(android_app*,AInputEvent* event){
         bool handled=gamepad.motion(event,guestDrivingControls(),setPadKey);if(handled)publishPad();return handled?1:0;
     }
     if(type!=AINPUT_EVENT_TYPE_KEY)return 0;
-    if(GamepadInput::isGamepad(event)&&acceptedGamepad(event)&&gamepad.key(event,guestDrivingControls(),setPadKey)){publishPad();return 1;}
+    // Any key of an accepted pad, whatever source it reports (pads in keyboard
+    // mode send KEYBOARD); keys it does not map fall through to the table below.
+    if(acceptedGamepad(event)&&gamepad.key(event,guestDrivingControls(),setPadKey)){publishPad();return 1;}
     int32_t key=AKeyEvent_getKeyCode(event);unsigned scan=0;
     switch(key){
     case AKEYCODE_DPAD_UP:scan=0xc8;break;case AKEYCODE_DPAD_DOWN:scan=0xd0;break;

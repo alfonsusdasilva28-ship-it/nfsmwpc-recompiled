@@ -41,6 +41,7 @@ public final class GameActivity extends NativeActivity {
     private boolean tiltLeft,tiltRight,tiltEnabled,tiltCalibrate=true;
     private float tiltFiltered,tiltNeutral,tiltSensitivity=1;
     private boolean tiltInvert;
+    private boolean padJoystick;
     private android.hardware.SensorManager tiltSensors;
     private android.hardware.Sensor tiltSensor;
     private final android.hardware.SensorEventListener tiltListener=new android.hardware.SensorEventListener() {
@@ -94,10 +95,16 @@ public final class GameActivity extends NativeActivity {
         @Override public void onInputDeviceRemoved(int id) {updateGamepads();}
         @Override public void onInputDeviceChanged(int id) {updateGamepads();}
     };
-    /** Physical gamepads drive the game natively; the touch layer hides while one is connected. */
+    /**
+     * Physical gamepads (Bluetooth or USB) drive the game; the touch layer hides while one is connected.
+     * Only external devices count: built-in sensors and side keys of several MediaTek phones report
+     * themselves as joysticks with X/Y axes, and their resting value used to steer the car by itself.
+     * Pads in "keyboard" mode report only KEYBOARD but still have gamepad buttons.
+     */
     private void updateGamepads() {
         boolean connected=false;
         java.util.ArrayList<Integer> accepted=new java.util.ArrayList<>();
+        StringBuilder seen=new StringBuilder();
         for(int id:android.view.InputDevice.getDeviceIds()) {
             android.view.InputDevice device=android.view.InputDevice.getDevice(id);
             if(device==null||device.isVirtual())continue;
@@ -107,14 +114,22 @@ public final class GameActivity extends NativeActivity {
             boolean stick=(sources&android.view.InputDevice.SOURCE_JOYSTICK)==android.view.InputDevice.SOURCE_JOYSTICK&&
                     device.getMotionRange(android.view.MotionEvent.AXIS_X)!=null&&
                     device.getMotionRange(android.view.MotionEvent.AXIS_Y)!=null;
-            if(buttons||stick){connected=true;accepted.add(id);}
+            boolean keys=(sources&android.view.InputDevice.SOURCE_KEYBOARD)==android.view.InputDevice.SOURCE_KEYBOARD&&
+                    device.getKeyboardType()!=android.view.InputDevice.KEYBOARD_TYPE_ALPHABETIC&&
+                    device.hasKeys(android.view.KeyEvent.KEYCODE_BUTTON_A)[0];
+            boolean pad=device.isExternal()&&(buttons||stick||keys);
+            seen.append(seen.length()==0?"":"; ").append(device.getName()).append(" [").append(Integer.toHexString(sources))
+                    .append(device.isExternal()?" external":" internal").append(pad?" pad":"").append(']');
+            if(pad){connected=true;accepted.add(id);}
         }
-        // Only these devices may move the guest's stick: phones whose built-in
-        // sensors also report joystick events otherwise steer by themselves.
+        android.util.Log.i("NFSMW","Input devices: "+seen);
+        // Only these devices may move the guest's stick or press its keys.
         int[] ids=new int[accepted.size()];for(int i=0;i<ids.length;++i)ids[i]=accepted.get(i);
         nativeGamepadDevices(ids);
         if(touchControls!=null)touchControls.setGamepadConnected(connected);
-        nativeGamepadConnected(connected);
+        // The DirectInput joystick is optional (launcher): by default the pad is
+        // folded into the keyboard keys the game already uses.
+        nativeGamepadConnected(connected&&padJoystick);
     }
     private final Runnable updateControlMode = new Runnable() {
         @Override public void run() {
@@ -221,6 +236,7 @@ public final class GameActivity extends NativeActivity {
         nativeMinimapTop(launch.getBooleanExtra("minimapTop", GameOptions.get(this, GameOptions.MINIMAP).equals("top")));
         nativeBackBuffers(launch.getIntExtra("backBuffers", Integer.parseInt(GameOptions.get(this, GameOptions.LATENCY))));
         nativeCpuTextures(launch.getBooleanExtra("cpuTextures", GameOptions.get(this, GameOptions.TEXTURES).equals("cpu")));
+        padJoystick = launch.getBooleanExtra("padJoystick", GameOptions.get(this, GameOptions.GAMEPAD).equals("directinput"));
         String[] loader = launch.getStringArrayExtra("driverLoader");
         if (loader == null || loader.length != 4) loader = GpuDrivers.loaderArguments(this);
         nativeGpuDriver(loader[0], loader[1], loader[2], loader[3]);

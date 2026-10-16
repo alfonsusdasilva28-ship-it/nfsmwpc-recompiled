@@ -56,6 +56,8 @@ tilt steering or a Bluetooth/USB gamepad.
 ### Next version (in this branch)
 
 - Minimap moved to the top-left corner in races (launcher option).
+- Bluetooth/USB gamepads: only external devices count as pads (also those in keyboard mode), and
+  by default they drive the game's keyboard keys; the analog DirectInput joystick is an option.
 - Car steering left by itself on some MediaTek phones: input from built-in sensors exposed as
   joysticks is ignored, and touch buttons whose release event was lost are let go.
 - DXVK crash in `D3D9Surface::ClearContainer` after a failed device Reset (issues #2, #3, #13).
@@ -157,6 +159,8 @@ clásico, Xbox o PlayStation, o sustituir por inclinación o por un mando Blueto
 ### Próxima versión (en esta rama)
 
 - Minimapa en la esquina superior izquierda durante las carreras (opción del launcher).
+- Mandos Bluetooth/USB: solo cuentan los dispositivos externos (también los que están en modo
+  teclado) y, por defecto, manejan las teclas del juego; el joystick DirectInput analógico es opcional.
 - El auto giraba solo a la izquierda en algunos MediaTek: se ignoran los sensores del teléfono que
   se presentan como joystick y se sueltan los botones táctiles cuyo evento de soltar se perdió.
 - Cierre de DXVK en `D3D9Surface::ClearContainer` tras un Reset fallido (issues #2, #3, #13).

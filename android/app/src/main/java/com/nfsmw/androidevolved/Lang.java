@@ -192,6 +192,9 @@ final class Lang {
         add("Texturas comprimidas", "Compressed textures", "Texturas comprimidas");
         add("Automático · GPU si las soporta", "Automatic · GPU if supported", "Automático · GPU se suportar");
         add("Convertir en CPU · compatibilidad", "Convert on CPU · compatibility", "Converter na CPU · compatibilidade");
+        add("Mando Bluetooth/USB", "Bluetooth/USB gamepad", "Controle Bluetooth/USB");
+        add("Como teclado · compatible", "As keyboard · compatible", "Como teclado · compatível");
+        add("Joystick DirectInput · analógico, experimental", "DirectInput joystick · analog, experimental", "Joystick DirectInput · analógico, experimental");
 
         // In-game dialogs and touch controls (GameActivity, RacingControlsView).
         add("Este dispositivo no dispone de acelerómetro", "This device has no accelerometer", "Este dispositivo não tem acelerômetro");
