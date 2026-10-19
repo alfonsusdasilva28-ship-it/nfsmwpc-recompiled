@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <algorithm>
 #include <vector>
+#include <cmath>
 #include <mutex>
 #include <atomic>
 #include <stdexcept>
@@ -264,17 +265,29 @@ static void onCommand(android_app* app, int32_t command) {
         acknowledgeD3D9Surface(false);setD3D9HostWindow(nullptr);
     }
 }
+// Set when the player actually uses the pad (a button, a stick past half way,
+// a trigger), so the touch controls can hide again after a touch revealed
+// them; GameActivity polls it with the driving-mode check.
+static std::atomic<bool> gamepadUsed{false};
+static void notePadUse(const AInputEvent* event){
+    if(AInputEvent_getType(event)==AINPUT_EVENT_TYPE_KEY){if(AKeyEvent_getAction(event)==AKEY_EVENT_ACTION_DOWN)gamepadUsed=true;return;}
+    for(int32_t axis:{AMOTION_EVENT_AXIS_X,AMOTION_EVENT_AXIS_Y,AMOTION_EVENT_AXIS_Z,AMOTION_EVENT_AXIS_RZ,AMOTION_EVENT_AXIS_HAT_X,AMOTION_EVENT_AXIS_HAT_Y})
+        if(std::fabs(AMotionEvent_getAxisValue(event,axis,0))>.5f){gamepadUsed=true;return;}
+    for(int32_t axis:{AMOTION_EVENT_AXIS_LTRIGGER,AMOTION_EVENT_AXIS_RTRIGGER,AMOTION_EVENT_AXIS_BRAKE,AMOTION_EVENT_AXIS_GAS})
+        if(AMotionEvent_getAxisValue(event,axis,0)>.3f){gamepadUsed=true;return;}
+}
+extern "C" JNIEXPORT jboolean JNICALL Java_com_nfsmw_androidevolved_GameActivity_nativeGamepadUsed(JNIEnv*,jclass){return gamepadUsed.exchange(false)?JNI_TRUE:JNI_FALSE;}
 static int32_t onInput(android_app*,AInputEvent* event){
     int32_t type=AInputEvent_getType(event);
     gamepad.setKeyEmulation(!guestGamepadInUse());
     if(type==AINPUT_EVENT_TYPE_MOTION){
         if(!acceptedGamepad(event))return 0;
-        bool handled=gamepad.motion(event,guestDrivingControls(),setPadKey);if(handled)publishPad();return handled?1:0;
+        bool handled=gamepad.motion(event,guestDrivingControls(),setPadKey);if(handled){notePadUse(event);publishPad();}return handled?1:0;
     }
     if(type!=AINPUT_EVENT_TYPE_KEY)return 0;
     // Any key of an accepted pad, whatever source it reports (pads in keyboard
     // mode send KEYBOARD); keys it does not map fall through to the table below.
-    if(acceptedGamepad(event)&&gamepad.key(event,guestDrivingControls(),setPadKey)){publishPad();return 1;}
+    if(acceptedGamepad(event)&&gamepad.key(event,guestDrivingControls(),setPadKey)){notePadUse(event);publishPad();return 1;}
     int32_t key=AKeyEvent_getKeyCode(event);unsigned scan=0;
     switch(key){
     case AKEYCODE_DPAD_UP:scan=0xc8;break;case AKEYCODE_DPAD_DOWN:scan=0xd0;break;

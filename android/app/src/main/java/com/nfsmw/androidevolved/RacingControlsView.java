@@ -100,6 +100,11 @@ final class RacingControlsView extends View {
     }
     boolean isDriving() {return racing&&!editing&&!hiddenByGamepad;}
     /** A physical gamepad is connected: get out of the way until the screen is touched. */
+    /** The pad was used while the controls were showing after a touch: get out of the way again. */
+    void gamepadUsed() {
+        if(!gamepadConnected||hiddenByGamepad||editing)return;
+        releaseAll();hiddenByGamepad=true;invalidate();
+    }
     void setGamepadConnected(boolean connected) {
         if(gamepadConnected==connected)return;
         gamepadConnected=connected;

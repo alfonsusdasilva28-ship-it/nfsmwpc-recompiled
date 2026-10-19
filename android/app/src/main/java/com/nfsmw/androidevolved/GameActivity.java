@@ -37,6 +37,7 @@ public final class GameActivity extends NativeActivity {
     private Runnable statusHideTask;
     private static native void nativeKey(int scan, boolean down);
     private static native boolean nativeDrivingControls();
+    private static native boolean nativeGamepadUsed();
     private final boolean[] touchKeys=new boolean[256],sentKeys=new boolean[256];
     private boolean tiltLeft,tiltRight,tiltEnabled,tiltCalibrate=true;
     private float tiltFiltered,tiltNeutral,tiltSensitivity=1;
@@ -135,6 +136,8 @@ public final class GameActivity extends NativeActivity {
         @Override public void run() {
             if(!foreground||touchControls==null)return;
             touchControls.setGameMode(nativeDrivingControls());
+            // Playing on with the pad after a touch revealed the controls hides them again.
+            if(nativeGamepadUsed())touchControls.gamepadUsed();
             touchControls.postDelayed(this,250);
         }
     };
