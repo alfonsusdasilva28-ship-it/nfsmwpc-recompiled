@@ -122,6 +122,8 @@ final class RacingControlsView extends View {
             add(16,16,46,"pause",1);
             // Most Wanted PC keyboard defaults.
             add(72,16,46,"reset",0x13);   // Respot: R
+            add(128,16,46,"map",0x32);    // World map: M
+            add(184,16,46,"sms",0x0f);    // Text messages: Tab
             if(style.equals("classic")) {
                 add(20,bottom-92,92,"left",0xcb);
                 add(124,bottom-92,92,"right",0xcd);

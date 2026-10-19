@@ -3,12 +3,12 @@
 
 ### Android downloads / Descargas Android
 
-[Most Wanted v0.1.5](https://github.com/codepdbh/nfsmwpc-recompiled/releases/tag/v0.1.5)
+[Most Wanted v0.1.6](https://github.com/codepdbh/nfsmwpc-recompiled/releases/tag/v0.1.6)
 
 | APK | Architecture |
 |---|---|
-| [ARM64 / 64 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.5/NFSMWPC-AndroidEvolved-v0.1.5-arm64.apk) | arm64-v8a, recommended |
-| [ARMv7 / 32 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.5/NFSMWPC-AndroidEvolved-v0.1.5-armeabi-v7a.apk) | armeabi-v7a; requires Android with 32-bit app support |
+| [ARM64 / 64 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.6/NFSMWPC-AndroidEvolved-v0.1.6-arm64.apk) | arm64-v8a, recommended |
+| [ARMv7 / 32 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.6/NFSMWPC-AndroidEvolved-v0.1.6-armeabi-v7a.apk) | armeabi-v7a; requires Android with 32-bit app support |
 
 Android 10+ and Vulkan 1.1+. Both APKs use the same package and signing key;
 install the architecture supported by your device. Original game data is required.
@@ -52,6 +52,15 @@ The launcher sets the internal resolution, FPS limit, proportional widescreen HU
 mode, Vulkan driver (system or a custom Turnip ZIP) and the Online server. In game, the on-screen
 controls can be moved, resized and switched to classic, Xbox or PlayStation layouts, or replaced by
 tilt steering or a Bluetooth/USB gamepad.
+
+### What's new in v0.1.6
+
+- Touch buttons for the world map (M) and text messages (Tab) while driving.
+- Touch controls hide again when you keep playing with a Bluetooth/USB gamepad after touching the screen.
+- Guest threads hand over the machine less often (the Underground 2 change that raised FPS ~30% on a Redmi Note 8).
+- Audio pauses with the game in the background instead of repeating the last sound.
+- Addresses the startup crash in a localized-string copy on several MediaTek phones (heap slack after blocks).
+- Android 10: the game folder can be read again (legacy storage).
 
 ### What's new in v0.1.5
 
@@ -155,6 +164,15 @@ del minimapa (arriba a la izquierda por defecto, para que el pulgar del volante 
 CPU/GPU, modo de texturas comprimidas, driver Vulkan (del sistema o un ZIP de Turnip) y servidor
 Online. En el juego, los controles táctiles se pueden mover, redimensionar y cambiar a los estilos
 clásico, Xbox o PlayStation, o sustituir por inclinación o por un mando Bluetooth/USB.
+
+### Novedades de v0.1.6
+
+- Botones táctiles de mapa (M) y mensajes (Tab) durante la conducción.
+- Los controles táctiles se vuelven a ocultar si sigues jugando con un mando Bluetooth/USB después de tocar la pantalla.
+- Los hilos del juego se turnan menos veces (el cambio de Underground 2 que subió ~30 % los FPS en un Redmi Note 8).
+- El audio se pausa con el juego en segundo plano en lugar de repetir el último sonido.
+- Aborda el cierre al arrancar en una copia de texto traducido en varios MediaTek (margen de memoria tras cada bloque).
+- Android 10: se vuelve a poder leer la carpeta del juego (almacenamiento heredado).
 
 ### Novedades de v0.1.5
 
