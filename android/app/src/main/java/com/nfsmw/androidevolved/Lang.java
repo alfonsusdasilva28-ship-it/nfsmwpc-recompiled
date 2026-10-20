@@ -134,6 +134,7 @@ final class Lang {
         add("Faltan funciones: ", "Missing features: ", "Recursos faltando: ");
         add("Prueba del driver Vulkan", "Vulkan driver test", "Teste do driver Vulkan");
         add("Usar driver del sistema", "Use system driver", "Usar driver do sistema");
+        add("Jugar igualmente", "Play anyway", "Jogar mesmo assim");
         add("Diagnóstico no válido: ", "Invalid diagnostics: ", "Diagnóstico inválido: ");
         add("La prueba se cerró o fue cancelada.", "The test closed or was cancelled.", "O teste foi fechado ou cancelado.");
         add("Importando driver Vulkan…", "Importing Vulkan driver…", "Importando driver Vulkan…");
