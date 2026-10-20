@@ -3,12 +3,12 @@
 
 ### Android downloads / Descargas Android
 
-[Most Wanted v0.1.6](https://github.com/codepdbh/nfsmwpc-recompiled/releases/tag/v0.1.6)
+[Most Wanted v0.1.7](https://github.com/codepdbh/nfsmwpc-recompiled/releases/tag/v0.1.7)
 
 | APK | Architecture |
 |---|---|
-| [ARM64 / 64 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.6/NFSMWPC-AndroidEvolved-v0.1.6-arm64.apk) | arm64-v8a, recommended |
-| [ARMv7 / 32 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.6/NFSMWPC-AndroidEvolved-v0.1.6-armeabi-v7a.apk) | armeabi-v7a; requires Android with 32-bit app support |
+| [ARM64 / 64 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.7/NFSMWPC-AndroidEvolved-v0.1.7-arm64.apk) | arm64-v8a, recommended |
+| [ARMv7 / 32 bits](https://github.com/codepdbh/nfsmwpc-recompiled/releases/download/v0.1.7/NFSMWPC-AndroidEvolved-v0.1.7-armeabi-v7a.apk) | armeabi-v7a; requires Android with 32-bit app support |
 
 Android 10+ and Vulkan 1.1+. Both APKs use the same package and signing key;
 install the architecture supported by your device. Original game data is required.
@@ -52,6 +52,11 @@ The launcher sets the internal resolution, FPS limit, proportional widescreen HU
 mode, Vulkan driver (system or a custom Turnip ZIP) and the Online server. In game, the on-screen
 controls can be moved, resized and switched to classic, Xbox or PlayStation layouts, or replaced by
 tilt steering or a Bluetooth/USB gamepad.
+
+### What's new in v0.1.7
+
+- The game's video options are kept between launches (they were reset on every start); render resolution and antialiasing stay under the launcher's control.
+- After an incompatible driver probe the launcher offers "Play anyway".
 
 ### What's new in v0.1.6
 
@@ -164,6 +169,11 @@ del minimapa (arriba a la izquierda por defecto, para que el pulgar del volante 
 CPU/GPU, modo de texturas comprimidas, driver Vulkan (del sistema o un ZIP de Turnip) y servidor
 Online. En el juego, los controles táctiles se pueden mover, redimensionar y cambiar a los estilos
 clásico, Xbox o PlayStation, o sustituir por inclinación o por un mando Bluetooth/USB.
+
+### Novedades de v0.1.7
+
+- Las opciones de vídeo del juego se conservan entre partidas (antes volvían a las predeterminadas en cada arranque); la resolución y el antialiasing siguen controlados por el launcher.
+- Si la prueba del driver dice que faltan funciones, el launcher ofrece «Jugar igualmente».
 
 ### Novedades de v0.1.6
 
