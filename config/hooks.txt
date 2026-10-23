@@ -1,4 +1,4 @@
-# Engine dimensions and HUD coordinates; retain original camera and post-processing.
+# Engine dimensions, HUD coordinates and the FixFOV camera (below); original post-processing.
 0x006C27F9  GetRacingResolution 640x480 return
 0x006C2810  GetRacingResolution 800x600 return
 0x006C2827  GetRacingResolution 1024x768 return
@@ -14,3 +14,8 @@
 0x005A44D0  Frontend HUD center after original X write
 0x006C9C5C  Mouse X in the same virtual HUD coordinates
 0x005696C0  FEngHud::SetWideScreenMode entry: minimap vertical offset
+# FixFOV (ThirteenAG's NFSMostWanted.WidescreenFix, Scaling = 1): Hor+ camera.
+0x006CF4F6  eView projection: per-view vertical scale instead of viewport H/W
+0x006CF56C  eView projection: horizontal constant (fdivr 1.0)
+0x006CF57E  eView projection: vertical angle constant (fmul)
+0x006CF5E2  eView projection: vertical constant (fdivr 1.0)

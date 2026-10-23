@@ -154,8 +154,30 @@ void nfs_widescreen_set_frame_rate(unsigned fps) { (void)fps; }
 void nfs_widescreen_apply_frame_rate(void) {}
 void nfs_frontend_cursor_units(int on) { (void)on; }
 float nfs_widescreen_hud_pos_x(void) { return hud_center; }
+/* FixFOV from ThirteenAG's NFSMostWanted.WidescreenFix (MIT), Scaling = 1.
+ * The projection (0x6CF400) takes the vertical angle as the horizontal one
+ * times the viewport's height/width, so the wider the screen the narrower the
+ * vertical view (Vert-): on 20:9 phones the car filled the screen, more so as
+ * the speed FOV widened. Like the mod: keep the 4:3 vertical view and widen
+ * the horizontal one (Hor+) for the player views 1 and 4; the rear-view mirror
+ * (view 3) uses 0.4, reflections (views > 10) keep their projection. */
+static double fov_scale[3]={1.0,0.5,1.0};
+static void fix_fov_view(uint32_t view){
+    float aspect=display_aspect>0.f?display_aspect:4.f/3.f;
+    double hor=1.0/(aspect/(4.0/3.0))/1.047485948;
+    if(view==1||view==4){fov_scale[0]=hor;fov_scale[1]=0.43434;fov_scale[2]=1.21;}
+    else{fov_scale[0]=1.0;fov_scale[1]=0.5;fov_scale[2]=1.0;}
+    g_st[0]=view==3?0.4:1.0;
+}
+
 void recomp_hook(uint32_t va) {
     switch(va){
+    /* ST0 = viewport height/width, view id in ecx. */
+    case 0x006CF4F6u:fix_fov_view(g_ecx);return;
+    /* `fdivr [0x89096C]`, `fmul [0x8933D4]`, `fdivr [0x89096C]`: rescale by new/original. */
+    case 0x006CF56Cu:g_st[0]*=fov_scale[0]/get_float(0x0089096Cu);return;
+    case 0x006CF57Eu:g_st[0]*=fov_scale[1]/get_float(0x008933D4u);return;
+    case 0x006CF5E2u:g_st[0]*=fov_scale[2]/get_float(0x0089096Cu);return;
     case 0x006C27F9u:case 0x006C2810u:case 0x006C2827u:
     case 0x006C283Eu:case 0x006C2855u:case 0x006C286Cu:
         if(render_width&&render_height){

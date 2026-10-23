@@ -237,3 +237,11 @@ S25-hosted Online session and chat delivery remain to be validated.
 
 The user subsequently confirmed Online was working and requested source
 publication on main plus both APK architectures as a GitHub release.
+
+## Camera FOV on wide phones (#127, #167)
+
+The projection at 0x6CF400 derives the vertical angle from the horizontal one times the viewport height/width (Vert-), so on 20:9 phones the car filled the screen and the hood camera showed no hood. Four hooks there (config/hooks.txt, `fix_fov_view` in src/runtime/widescreen.c) apply ThirteenAG's FixFOV with Scaling = 1: Hor+ for the player views 1 and 4, 0.4 for the rear-view mirror (view 3), reflections unchanged. Unlike the removed experiment, the x87 stack is only rescaled at the mod's three constants, not rewritten.
+
+## Audio on MediaTek, Mali and Unisoc phones
+
+The AAudio buffer was two bursts (4-10 ms). Those drivers report no xruns, so it never grew, and any render or guest-lock hiccup broke the sound. It now starts at 40 ms, grows to 100 ms on reported underruns, and falls back to a non-low-latency stream when the low-latency one cannot hold 40 ms. Streaming loops (music, engine mix) the guest stops refilling are muted after one full ring instead of repeating it.
