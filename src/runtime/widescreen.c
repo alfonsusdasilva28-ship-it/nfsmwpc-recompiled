@@ -172,6 +172,12 @@ static void fix_fov_view(uint32_t view){
 
 void recomp_hook(uint32_t va) {
     switch(va){
+    /* strncpy-like copy (dest, src, count): the localized-string lookup at
+     * 0x56BB80 returns NULL when the player's LANGUAGES files lack the entry
+     * (other game editions), and the copy read guest address 0. Copy "". */
+    case 0x00460CA0u:
+        if(!MEM32(g_esp+8)&&MEM32(g_esp+12)&&MEM32(g_esp+4)){MEM8(MEM32(g_esp+4))=0;MEM32(g_esp+8)=MEM32(g_esp+4);}
+        return;
     /* ST0 = viewport height/width, view id in ecx. */
     case 0x006CF4F6u:fix_fov_view(g_ecx);return;
     /* `fdivr [0x89096C]`, `fmul [0x8933D4]`, `fdivr [0x89096C]`: rescale by new/original. */

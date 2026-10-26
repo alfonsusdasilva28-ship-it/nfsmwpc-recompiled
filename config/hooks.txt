@@ -19,3 +19,5 @@
 0x006CF56C  eView projection: horizontal constant (fdivr 1.0)
 0x006CF57E  eView projection: vertical angle constant (fmul)
 0x006CF5E2  eView projection: vertical constant (fdivr 1.0)
+# Robustness for incomplete game data (Android reports).
+0x00460CA0  bounded string copy: a NULL source (localized string missing from the player's language files) copies an empty string
