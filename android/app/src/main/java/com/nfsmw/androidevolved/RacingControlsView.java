@@ -134,6 +134,7 @@ final class RacingControlsView extends View {
                 add(w-110,bottom-150,90,150,PEDAL,"gas",0xc8,0xFF1E7A4A);
                 add(w-206,bottom-108,82,108,PEDAL,"brake",0xd0,0xFF8A2A2A);
                 add(w-290,bottom-72,70,"nitro",0x38);     // Nitrous: Left Alt
+                add(w-280,bottom-142,56,"speedbreaker",0x9d); // GAME_ACTION_GAMEBREAKER: Right Control
             } else {
                 boolean xbox=style.equals("xbox");
                 add(24,bottom-160,160,160,WHEEL,"stick",STICK,0);
@@ -143,6 +144,7 @@ final class RacingControlsView extends View {
                 add(w-186,bottom-238,58,xbox?"B":"○",0x38);
                 add(w-318,bottom-238,58,xbox?"X":"□",0x2e);
                 add(w-252,bottom-298,58,xbox?"Y":"△",0x30);
+                add(w-186,bottom-310,52,"speedbreaker",0x9d);
                 add(30,bottom-228,52,"shiftUp",0x2a);
                 add(92,bottom-228,52,"shiftDown",0x1d);
             }
@@ -256,6 +258,10 @@ final class RacingControlsView extends View {
                 canvas.drawArc(cx-s*.95f,cy-s*.95f,cx+s*.95f,cy+s*.95f,-50,100,false,line);
                 glyph(canvas,"P",cx,cy,s*.9f,on);break;
             case "nitro": glyph(canvas,"N₂O",cx,cy,s*.9f,on);break;
+            case "speedbreaker":   // a stopwatch
+                canvas.drawCircle(cx,cy+s*.12f,s*.72f,line);canvas.drawLine(cx,cy-s*.6f,cx,cy-s*.85f,line);
+                canvas.drawLine(cx-s*.25f,cy-s*.9f,cx+s*.25f,cy-s*.9f,line);
+                canvas.drawLine(cx,cy+s*.12f,cx+s*.35f,cy-s*.2f,line);break;
             case "accept":
                 path.reset();path.moveTo(cx-s*.7f,cy);path.lineTo(cx-s*.15f,cy+s*.55f);path.lineTo(cx+s*.75f,cy-s*.5f);
                 canvas.drawPath(path,line);break;
